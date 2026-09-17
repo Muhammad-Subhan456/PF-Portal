@@ -317,9 +317,34 @@ export async function getStudentGrades(rollNumber: string, section?: 'CS-F26-M' 
 }
 
 /**
+ * Classify a grade item into dashboard category using column title and tab name.
+ */
+function classifyGradeCategory(
+  columnOrTitle: string,
+  tabName: string
+): 'labs' | 'assignments' | 'quizzes' | 'exams' {
+  const col = (columnOrTitle || '').toLowerCase();
+  const tab = (tabName || '').toLowerCase();
+
+  if (/\blabs?\b/.test(col) || tab.includes('lab')) return 'labs';
+  if (/\bassignments?\b/.test(col) || tab.includes('assignment')) return 'assignments';
+  if (/\bquizzes?\b/.test(col) || tab.includes('quiz')) return 'quizzes';
+  if (
+    /\b(midterm|final|exam)\b/.test(col) ||
+    tab.includes('midterm') ||
+    tab.includes('final') ||
+    tab.includes('exam')
+  ) {
+    return 'exams';
+  }
+  // Custom tabs / columns still count toward course (exams bucket on dashboard)
+  return 'exams';
+}
+
+/**
  * Get student dashboard statistics
- * Aggregates from visible grade tabs (same data Grades page uses),
- * not only legacy arrays keyed by tab-name keywords.
+ * Aggregates from visible grade tabs (same source as Grades page).
+ * Classifies by column name first, then tab name, so Lab 01 in a "Marks" tab still counts as labs.
  */
 export async function getStudentStats(rollNumber: string, section?: 'CS-F26-M' | 'CS-F26-A'): Promise<{
   overallLabGrade: number; // Lab percentage
@@ -328,11 +353,25 @@ export async function getStudentStats(rollNumber: string, section?: 'CS-F26-M' |
   assignments: { score: number; total: number; count: number };
   quizzes: { score: number; total: number; count: number };
   exams: { score: number; total: number; count: number };
-  overall: number; // Legacy - combined (for backward compatibility)
+  overall: number; // Combined across all visible tabs
 }> {
-  const grades = await getStudentGrades(rollNumber, section);
+  let resolvedSection = section;
 
-  type StatItem = { score: number; total: number; isBonusOrPenalty?: boolean };
+  // If section missing on profile, resolve from enrollment so grade_sheets visibility matches
+  if (!resolvedSection) {
+    const { data: enrolled } = await supabase
+      .from('enrolled_students')
+      .select('section')
+      .ilike('roll_number', rollNumber)
+      .maybeSingle();
+    if (enrolled?.section === 'CS-F26-M' || enrolled?.section === 'CS-F26-A') {
+      resolvedSection = enrolled.section;
+    }
+  }
+
+  const grades = await getStudentGrades(rollNumber, resolvedSection);
+
+  type StatItem = { score: number; total: number };
   const labsItems: StatItem[] = [];
   const assignmentsItems: StatItem[] = [];
   const quizzesItems: StatItem[] = [];
@@ -341,28 +380,22 @@ export async function getStudentStats(rollNumber: string, section?: 'CS-F26-M' |
   for (const tab of grades.tabs) {
     if (tab.visible === false) continue;
 
-    const tabNameLower = (tab.name || '').toLowerCase();
+    const tabNameLower = (tab.name || '').toLowerCase().trim();
+    if (tabNameLower === 'extra') continue;
+
     const items = (tab.items || []).filter((item) => !item.isBonusOrPenalty);
 
     for (const item of items) {
       const entry: StatItem = {
         score: item.score ?? 0,
         total: item.total ?? 0,
-        isBonusOrPenalty: item.isBonusOrPenalty,
       };
+      const category = classifyGradeCategory(item.columnName || item.title, tab.name);
 
-      if (tabNameLower.includes('lab')) {
-        labsItems.push(entry);
-      } else if (tabNameLower.includes('assignment')) {
-        assignmentsItems.push(entry);
-      } else if (tabNameLower.includes('quiz')) {
-        quizzesItems.push(entry);
-      } else if (tabNameLower.includes('midterm') || tabNameLower.includes('final') || tabNameLower.includes('exam')) {
-        examsItems.push(entry);
-      } else {
-        // Unnamed / custom tabs (Sessional, Marks, etc.) still count toward course grade
-        examsItems.push(entry);
-      }
+      if (category === 'labs') labsItems.push(entry);
+      else if (category === 'assignments') assignmentsItems.push(entry);
+      else if (category === 'quizzes') quizzesItems.push(entry);
+      else examsItems.push(entry);
     }
   }
 

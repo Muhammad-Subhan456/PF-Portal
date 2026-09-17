@@ -48,13 +48,24 @@ const Index = () => {
     }
   }, [profile?.email, isAdmin]);
 
-  // Always fetch fresh stats (same as Grades page) so sheet updates appear on dashboard
+  // Always fetch fresh stats when profile is ready, and again when window regains focus
   useEffect(() => {
     if (profile?.roll_number && !isAdmin) {
       fetchDashboardData();
     } else if (profile === null && !isAdmin) {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.roll_number, profile?.section, isAdmin]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (profile?.roll_number && !isAdmin) {
+        fetchDashboardData();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.roll_number, profile?.section, isAdmin]);
 
@@ -142,7 +153,7 @@ const Index = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: "100ms" }}>
           <StatCard
             title="Labs"
-            value={loading ? <Skeleton className="h-6 w-12" /> : (stats ? `${stats.overallLabGrade}%` : '0%')}
+            value={loading ? <Skeleton className="h-6 w-12" /> : (stats && stats.labs.total > 0 ? `${stats.overallLabGrade}%` : '—')}
             subtitle={labsCompleted > 0 ? `${labsCompleted} completed` : 'No labs yet'}
             icon={<BookOpen className="h-5 w-5 text-primary-foreground" />}
             variant="primary"
@@ -161,30 +172,35 @@ const Index = () => {
             variant="secondary"
           />
           <StatCard
-            title="Overall Lab Grade"
-            value={loading ? <Skeleton className="h-6 w-12" /> : (stats && stats.overallLabGrade > 0 ? getLetterGrade(stats.overallLabGrade) : '—')}
-            subtitle={stats && stats.overallLabGrade > 0 ? `${stats.overallLabGrade}%` : 'No grades yet'}
+            title="Overall Grade"
+            value={loading ? <Skeleton className="h-6 w-12" /> : (stats && stats.overall > 0 ? getLetterGrade(stats.overall) : '—')}
+            subtitle={stats && stats.overall > 0 ? `${stats.overall}%` : 'No grades yet'}
             icon={<Award className="h-5 w-5 text-muted-foreground" />}
           />
         </div>
 
         {/* Charts Row */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Overall Lab Grade Donut */}
+          {/* Overall Grade Donut — all visible sheet tabs combined */}
           <div className="bg-card rounded-2xl border border-border p-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
-            <h2 className="text-lg font-semibold text-foreground mb-4">Overall Lab Grade</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Overall Grade</h2>
             <div className="flex justify-center">
               {loading ? (
                 <Skeleton className="h-48 w-48 rounded-full" />
               ) : (
-                <GradeDonutChart percentage={stats?.overallLabGrade || 0} size="lg" />
+                <GradeDonutChart percentage={stats?.overall || 0} size="lg" />
               )}
             </div>
             <div className="mt-4 text-center">
-              {stats && stats.overallLabGrade > 0 ? (
+              {stats && stats.overall > 0 ? (
                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/20 text-foreground text-sm font-medium">
                   <TrendingUp className="h-4 w-4" />
-                  Grade: {getLetterGrade(stats.overallLabGrade)}
+                  Grade: {getLetterGrade(stats.overall)}
+                  {stats.overallLabGrade > 0 && (
+                    <span className="text-muted-foreground font-normal">
+                      (Labs {stats.overallLabGrade}%)
+                    </span>
+                  )}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-muted-foreground text-sm font-medium">
