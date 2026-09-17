@@ -10,7 +10,7 @@ This happens when Supabase Dashboard's "Site URL" setting is configured with the
 
 ### Step 1: Update Supabase Dashboard Settings
 
-1. Go to your Supabase Dashboard: https://supabase.com/dashboard/project/agtzjfzxwyjwxpxkvwuc
+1. Go to your Supabase Dashboard: https://supabase.com/dashboard/project/vlzdexawykxtnjdwbjpt
 2. Navigate to **Authentication** > **URL Configuration**
 3. Update the **Site URL** field:
    - For local development: `http://localhost:8080`
@@ -26,7 +26,7 @@ This happens when Supabase Dashboard's "Site URL" setting is configured with the
 2. Navigate to **APIs & Services** > **Credentials**
 3. Find your OAuth 2.0 Client ID
 4. In **Authorized redirect URIs**, ensure both are present:
-   - `https://agtzjfzxwyjwxpxkvwuc.supabase.co/auth/v1/callback`
+   - `https://vlzdexawykxtnjdwbjpt.supabase.co/auth/v1/callback`
    - `http://localhost:8080/auth/callback` (if you're using a custom callback)
 
 ### Step 3: Verify Code Configuration

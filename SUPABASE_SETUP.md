@@ -14,7 +14,7 @@ Run the following migrations in order in your Supabase SQL Editor:
 
 #### Step 1: Enable Google Provider in Supabase
 
-1. Go to your Supabase Dashboard: https://supabase.com/dashboard/project/agtzjfzxwyjwxpxkvwuc
+1. Go to your Supabase Dashboard: https://supabase.com/dashboard/project/vlzdexawykxtnjdwbjpt
 2. Navigate to **Authentication** > **Providers**
 3. Find **Google** in the list and click **Enable**
 4. **IMPORTANT**: Leave the Client ID and Secret fields empty for now - you'll add them after creating credentials in Google Cloud Console
@@ -35,12 +35,12 @@ Run the following migrations in order in your Supabase SQL Editor:
    - **Name**: Programming Fundamentals Portal (or any name you prefer)
    - **Authorized JavaScript origins** (add these):
      ```
-     https://agtzjfzxwyjwxpxkvwuc.supabase.co
+     https://vlzdexawykxtnjdwbjpt.supabase.co
      http://localhost:8080
      ```
    - **Authorized redirect URIs** (add these):
      ```
-     https://agtzjfzxwyjwxpxkvwuc.supabase.co/auth/v1/callback
+     https://vlzdexawykxtnjdwbjpt.supabase.co/auth/v1/callback
      http://localhost:8080/auth/callback
      ```
 8. Click **Create**
@@ -59,7 +59,7 @@ Run the following migrations in order in your Supabase SQL Editor:
 Create a `.env` file in the root directory (already created, but verify):
 
 ```env
-VITE_SUPABASE_URL=https://agtzjfzxwyjwxpxkvwuc.supabase.co
+VITE_SUPABASE_URL=https://vlzdexawykxtnjdwbjpt.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable__ig_hbDs0AaBg09GKDo6zQ_xeovbrtP
 ```
 

@@ -138,7 +138,7 @@ Run the SQL migrations in Supabase SQL Editor:
 ### 6. Environment Variables
 Create `.env` file:
 ```
-VITE_SUPABASE_URL=https://agtzjfzxwyjwxpxkvwuc.supabase.co
+VITE_SUPABASE_URL=https://vlzdexawykxtnjdwbjpt.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable__ig_hbDs0AaBg09GKDo6zQ_xeovbrtP
 ```
 

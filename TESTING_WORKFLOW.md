@@ -101,8 +101,19 @@ Checklist:
 
 ---
 
-## Grades (deferred)
+## Grades (deferred → now enabled after Sheets setup)
 
-Google Sheets Edge Function sync is **Phase 7** — do not block A/B/C on grades.
+After deploying `sync-google-sheets` and setting `GOOGLE_SERVICE_ACCOUNT`:
 
-See [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md) when ready.
+1. Admin → `/admin/grades` → section CS-F26-M → paste sheet URL → Save → **Sync Now**
+2. Confirm tabs/columns; toggle visibility
+3. Student with matching roll → `/grades` shows scores
+4. Repeat for CS-F26-A if needed
+
+See [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md) and [scripts/SET_SHEETS_SECRET.md](scripts/SET_SHEETS_SECRET.md).
+
+Verify function is deployed:
+
+```powershell
+node scripts/verify-sheets-function.js
+```

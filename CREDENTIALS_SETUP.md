@@ -136,13 +136,14 @@ node scripts/setup-storage-policies.js
 
 
 
-## Phase 7 — Google Sheets (later)
+## Phase 7 — Google Sheets grades
 
-Deferred until login + deploy work. See `GOOGLE_SHEETS_SETUP.md` (service account + Edge Function `sync-google-sheets`).
+1. Follow [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md) (Sheets API + service account + secret + deploy).
+2. Share each grade sheet with the service account email (**Viewer**).
+3. Admin → **Grades Config** → save sheet URL per section → **Sync Now**.
+4. Confirm student `/grades` shows data for matching roll numbers.
 
 ---
-
-
 
 ## Checklist
 
@@ -153,4 +154,4 @@ Deferred until login + deploy work. See `GOOGLE_SHEETS_SETUP.md` (service accoun
 - [ ] Local Google login works
 - [ ] `promote-admin.sql` run; `/admin` works
 - [ ] Vercel deploy + production redirect URLs
-- [ ] (Later) Google Sheets sync
+- [ ] Google Sheets sync working for CS-F26-M / CS-F26-A

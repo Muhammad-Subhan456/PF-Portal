@@ -1,4 +1,4 @@
-project_id = "agtzjfzxwyjwxpxkvwuc"
+project_id = "vlzdexawykxtnjdwbjpt"
 [functions.sync-google-sheets]
 enabled = true
 verify_jwt = false
@@ -7,5 +7,5 @@ import_map = "./functions/sync-google-sheets/deno.json"
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/sync-google-sheets/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
+# For example, if you want to serve static HTML pages with the function:
 # static_files = [ "./functions/sync-google-sheets/*.html" ]

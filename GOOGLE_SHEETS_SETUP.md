@@ -1,173 +1,118 @@
-# Google Sheets API Setup Guide
+# Google Sheets Grade Sync Setup
 
-## Overview
+Programming Fundamentals Portal syncs grades from Google Sheets via the Supabase Edge Function `sync-google-sheets`.
 
-The Programming Fundamentals Portal integrates with Google Sheets to automatically sync grade data. This requires setting up Google API credentials and a Supabase Edge Function.
+**Supabase project ref:** `vlzdexawykxtnjdwbjpt`  
+**Dashboard:** https://supabase.com/dashboard/project/vlzdexawykxtnjdwbjpt
 
-## Step 1: Google Cloud Console Setup
+## Sheet layout (required)
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the **Google Sheets API**:
-   - Navigate to "APIs & Services" > "Library"
-   - Search for "Google Sheets API"
-   - Click "Enable"
+| Requirement | Example |
+|-------------|---------|
+| Row 1 = headers | |
+| Roll column | `Roll Number` (header must contain `roll`) |
+| Grade columns | `Lab 01 (10)`, `Assignment 1 (50)` — max marks in `( )` |
+| One row per student | Roll matches enrollment (e.g. `bcsf26m001`) |
 
-## Step 2: Create Service Account (Recommended)
+Optional tabs: `Labs`, `Assignments`, `Quizzes`, etc. Configure one sheet URL per section (`CS-F26-M`, `CS-F26-A`) in **Admin → Grades Config**.
 
-1. Go to "APIs & Services" > "Credentials"
-2. Click "Create Credentials" > "Service Account"
-3. Fill in the service account details
-4. Click "Create and Continue"
-5. Skip role assignment (or add "Editor" role)
-6. Click "Done"
-7. Click on the created service account
-8. Go to "Keys" tab
-9. Click "Add Key" > "Create new key"
-10. Choose "JSON" format
-11. Download the JSON key file
+Do **not** commit service account JSON. It is gitignored (`*service-account*`).
 
-## Step 3: Share Google Sheet with Service Account
+---
 
-1. Open your Google Sheet
-2. Click "Share" button
-3. Add the service account email (found in the JSON key file, field: `client_email`)
-4. Give it "Viewer" or "Editor" access
-5. Click "Send"
+## Step 1: Enable Google Sheets API
 
-## Step 4: Create Supabase Edge Function
+1. [Google Cloud Console](https://console.cloud.google.com/) → your project  
+2. **APIs & Services → Library** → enable **Google Sheets API**
 
-Create a Supabase Edge Function to handle Google Sheets API calls:
+## Step 2: Create a service account
 
-### Install Supabase CLI (Windows)
+1. **APIs & Services → Credentials → Create credentials → Service account**  
+2. Name e.g. `pf-portal-sheets` → Create → Done  
+3. Open the service account → **Keys → Add key → JSON** → download  
+4. Copy `client_email` from the JSON (ends with `.iam.gserviceaccount.com`)
 
-**⚠️ Note**: `npm install -g supabase` does NOT work. Use one of these methods:
+## Step 3: Share your grade sheet(s)
 
-#### Option 1: Using Scoop (Recommended for Windows)
+1. Open the Google Sheet  
+2. **Share** → paste `client_email` → role **Viewer** → Send  
+
+## Step 4: Set Supabase secret
+
+Convert the JSON to a **single line** (or paste raw JSON in the Dashboard).
+
+### Option A — Dashboard (easiest)
+
+1. https://supabase.com/dashboard/project/vlzdexawykxtnjdwbjpt/settings/functions  
+2. **Edge Function Secrets** → add:
+   - Name: `GOOGLE_SERVICE_ACCOUNT`  
+   - Value: full JSON contents of the key file  
+
+### Option B — CLI
+
 ```powershell
-# Install Scoop if you don't have it
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-irm get.scoop.sh | iex
+# From project root (folder with supabase/)
+npx supabase login
+npx supabase link --project-ref vlzdexawykxtnjdwbjpt
 
-# Install Supabase CLI
-scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-scoop install supabase
+# PowerShell: read JSON file as one-line secret
+$json = Get-Content -Raw .\your-service-account.json
+npx supabase secrets set GOOGLE_SERVICE_ACCOUNT="$json" --project-ref vlzdexawykxtnjdwbjpt
 ```
 
-#### Option 2: Using Winget (Windows 10/11)
+## Step 5: Deploy the Edge Function
+
+### Fix: “Access token not provided”
+
+The CLI must be logged in. In **your** PowerShell (not a background agent), run:
+
 ```powershell
-winget install --id=Supabase.CLI -e
+npx supabase login
 ```
 
-#### Option 3: Using Chocolatey
+A browser opens → authorize. After that succeeds, deploy:
+
 ```powershell
-choco install supabase
+cd "C:\Users\M. Subhan\Desktop\dsa-portal-main\dsa-portal-main"
+npx supabase functions deploy sync-google-sheets --project-ref vlzdexawykxtnjdwbjpt
 ```
 
-#### Option 4: Direct Download
-1. Go to [Supabase CLI Releases](https://github.com/supabase/cli/releases)
-2. Download the Windows executable (`supabase_X.X.X_windows_amd64.zip`)
-3. Extract and add to your PATH
+**Alternative (no browser login):** create a token at  
+https://supabase.com/dashboard/account/tokens → then:
 
-### After Installation:
-
-1. Verify installation: `supabase --version`
-2. Login: `supabase login`
-3. Link project: `supabase link --project-ref agtzjfzxwyjwxpxkvwuc`
-4. Create function: `supabase functions new sync-google-sheets`
-
-## Step 5: Edge Function Implementation
-
-The edge function should:
-- Use the service account JSON key to authenticate
-- Fetch data from Google Sheets API
-- Parse and cache data in Supabase
-- Handle errors gracefully
-
-## Step 6: Environment Variables
-
-Add the service account JSON to Supabase secrets:
-
-```bash
-supabase secrets set GOOGLE_SERVICE_ACCOUNT='{"type":"service_account",...}'
+```powershell
+$env:SUPABASE_ACCESS_TOKEN = "sbp_your_token_here"
+npx supabase functions deploy sync-google-sheets --project-ref vlzdexawykxtnjdwbjpt
 ```
 
-Or store it in Supabase Dashboard > Project Settings > Edge Functions > Secrets
+Confirm the function appears under **Edge Functions** in the dashboard.
 
-## Step 7: Update Frontend
+## Step 6: Test in the app
 
-Once the edge function is deployed, the frontend will automatically use it when syncing sheets.
+1. `npm run dev` → sign in as admin  
+2. **Admin → Grades Config**  
+3. Select section **CS-F26-M** (or **CS-F26-A**)  
+4. Paste Google Sheet URL → **Save Configuration** → **Sync Now**  
+5. Confirm tabs/columns appear; toggle visibility  
+6. Student with matching roll opens `/grades` and sees synced scores  
 
-## Alternative: OAuth 2.0 Setup
+### Common errors
 
-**⚠️ Important**: If you only have OAuth 2.0 credentials (for user authentication), you still need to complete these steps:
+| Error | Fix |
+|-------|-----|
+| `GOOGLE_SERVICE_ACCOUNT secret not configured` | Set secret (Step 4), redeploy if needed |
+| Failed to fetch tabs / permission | Share sheet with `client_email` as Viewer |
+| Unauthorized | Sign in again as admin; ensure JWT is sent |
+| 0 students synced | Check Roll Number column and non-empty rolls |
 
-### Required Steps (Even with OAuth):
+## How it works
 
-1. **Step 1: Enable Google Sheets API** ✅ **REQUIRED**
-   - You MUST enable Google Sheets API in Google Cloud Console
-   - This is separate from OAuth credentials
+```
+Admin Sync Now → Edge Function sync-google-sheets
+  → Google Sheets API (service account)
+  → upsert grade_data in Supabase
+Student Grades page → reads grade_data (+ visibility from grade_sheets)
+```
 
-2. **Step 4: Create Supabase Edge Function** ✅ **REQUIRED**
-   - You MUST create the Edge Function to handle API calls
-   - The frontend cannot directly call Google Sheets API (CORS restrictions)
-
-3. **Step 5: Implement Edge Function with OAuth** ✅ **REQUIRED**
-   - The Edge Function needs to use OAuth tokens instead of Service Account
-   - More complex: requires storing refresh tokens, handling token refresh
-   - The admin's Google account must have access to the sheets
-
-4. **Step 6: Store OAuth Tokens** ✅ **REQUIRED**
-   - Store OAuth Client ID and Secret in Supabase secrets
-   - Store user's refresh token (obtained during OAuth flow)
-   - Implement token refresh logic in Edge Function
-
-### Steps You Can Skip (If Using OAuth):
-
-- ❌ **Step 2: Create Service Account** - Not needed if using OAu
-th
-- ❌ **Step 3: Share with Service Account** - Not needed; user's account needs access instead
-
-### OAuth vs Service Account Comparison:
-
-| Feature | Service Account (Recommended) | OAuth 2.0 |
-|---------|------------------------------|-----------|
-| Setup Complexity | Simple | Complex |
-| User Interaction | None required | Requires permission grant |
-| Token Management | Simple (JSON key) | Complex (refresh tokens) |
-| Sheet Access | Share with service account email | User's account must have access |
-| Best For | Automated syncing | User-specific access |
-
-### Recommendation:
-
-**Use Service Account** if possible - it's much simpler and doesn't require user interaction. Only use OAuth if you specifically need user-specific access or can't use Service Accounts.
-
-### If You Must Use OAuth:
-
-You'll need to:
-1. Add Google Sheets API scopes to your OAuth consent screen: `https://www.googleapis.com/auth/spreadsheets.readonly`
-2. Implement OAuth flow to get refresh token
-3. Store refresh token securely in Supabase
-4. Update Edge Function to use OAuth tokens instead of Service Account
-5. Implement token refresh logic in Edge Function
-
-## Testing
-
-1. Configure a Google Sheet in the admin panel
-2. Click "Sync Now"
-3. Check that data appears in the grade_data table
-4. Verify students can see their grades
-
-## Troubleshooting
-
-### "Permission denied" errors
-- Ensure the service account email has access to the sheet
-- Check that the sheet is shared correctly
-
-### "API not enabled" errors
-- Verify Google Sheets API is enabled in Google Cloud Console
-- Check API quotas and limits
-
-### "Invalid credentials" errors
-- Verify the service account JSON is correct
-- Check that secrets are properly set in Supabase
+Frontend entry: `src/lib/googleSheets.ts` → `syncSheetData()`  
+Function: `supabase/functions/sync-google-sheets/index.ts`

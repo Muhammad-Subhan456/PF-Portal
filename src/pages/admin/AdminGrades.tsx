@@ -595,7 +595,11 @@ const AdminGrades = () => {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                The sheet must be shared with: dsa-portal@dsa-portal-484115.iam.gserviceaccount.com (Viewer access)
+                Share the sheet with your Google <strong>service account</strong> email
+                (from the JSON key&apos;s <code className="text-xs">client_email</code> field) as{" "}
+                <strong>Viewer</strong>. Set that account as the{" "}
+                <code className="text-xs">GOOGLE_SERVICE_ACCOUNT</code> secret on the Edge Function.
+                See <code className="text-xs">GOOGLE_SHEETS_SETUP.md</code>.
               </p>
             </div>
 

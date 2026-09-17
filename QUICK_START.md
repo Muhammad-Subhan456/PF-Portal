@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. Node.js installed (v18+)
-2. Supabase project: `agtzjfzxwyjwxpxkvwuc`
+2. Supabase project: `vlzdexawykxtnjdwbjpt`
 3. Google Cloud account (for OAuth and Sheets API)
 
 ## Step 1: Install Dependencies
@@ -17,13 +17,13 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-VITE_SUPABASE_URL=https://agtzjfzxwyjwxpxkvwuc.supabase.co
+VITE_SUPABASE_URL=https://vlzdexawykxtnjdwbjpt.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable__ig_hbDs0AaBg09GKDo6zQ_xeovbrtP
 ```
 
 ## Step 3: Database Setup
 
-1. Go to Supabase Dashboard: https://supabase.com/dashboard/project/agtzjfzxwyjwxpxkvwuc
+1. Go to Supabase Dashboard: https://supabase.com/dashboard/project/vlzdexawykxtnjdwbjpt
 2. Navigate to SQL Editor
 3. Run migrations in order:
    - Copy and run `supabase/migrations/001_initial_schema.sql`
