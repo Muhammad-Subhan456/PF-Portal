@@ -1,6 +1,5 @@
 import { Mail, Phone, ExternalLink } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -69,6 +68,17 @@ const ContactCard = ({
     </Card>
 );
 
+const teachingAssistants = [
+    { name: "Ibraheem Qureshi", roll: "bcsf23m05", phone: "+92 305 4633021" },
+    { name: "Muhammad Subhan", roll: "bcsf23m025", phone: "+92 313 4713370" },
+    { name: "Huda Liaquat", roll: "bcsf23m006", phone: "+92 312 7090193" },
+    { name: "Laibah Rashid", roll: "bitf23m036", phone: "+92 322 0242234" },
+    { name: "Mauzam Ali", roll: "bcsf23m047", phone: "+92 312 4883528" },
+    { name: "Muhammad Zohaib", roll: "bcsf23m027", phone: "+92 320 4036559" },
+    { name: "Maaz Bin Asif", roll: "bcsf24m007", phone: "+92 312 1442598" },
+    { name: "Muhammad Ali", roll: "bcsf24a024", phone: "+92 335 3378356" },
+];
+
 const Contact = () => {
     return (
         <AppLayout>
@@ -79,35 +89,25 @@ const Contact = () => {
                 </div>
 
                 <div className="grid gap-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
-                    {/* Main Instructor */}
                     <ContactCard
-                        name="Dr. Zobia Sohail"
+                        name="Sir Abdul Mateen"
                         title="Course Instructor"
-                        email="zobia.suhail@pucit.edu.pk"
+                        email="amateen@pucit.edu.pk"
                         isMain={true}
                     />
 
                     <div>
                         <h2 className="text-xl font-semibold mb-4">Teaching Assistants</h2>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <ContactCard
-                                name="Hafiz Own"
-                                title="Teaching Assistant"
-                                email="bcsf23m018@pucit.edu.pk"
-                                phone="+92 326 0706350"
-                            />
-                            <ContactCard
-                                name="Hafiz Abdul Qadir"
-                                title="Teaching Assistant"
-                                email="bcsf23m002@pucit.edu.pk"
-                                phone="+92 323 4892756"
-                            />
-                            <ContactCard
-                                name="Asadullah Ahmad"
-                                title="Teaching Assistant"
-                                email="bcsf23m020@pucit.edu.pk"
-                                phone="+92 334 6630398"
-                            />
+                            {teachingAssistants.map((ta) => (
+                                <ContactCard
+                                    key={ta.roll}
+                                    name={ta.name}
+                                    title="Teaching Assistant"
+                                    email={`${ta.roll}@pucit.edu.pk`}
+                                    phone={ta.phone}
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
