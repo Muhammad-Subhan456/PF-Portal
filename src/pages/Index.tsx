@@ -28,7 +28,6 @@ const Index = () => {
   } | null>(null);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([]);
-  const [hasFetched, setHasFetched] = useState(false); // Track if data has been fetched
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null); // null = checking, true = enrolled, false = not enrolled
 
   // Redirect admin
@@ -49,53 +48,24 @@ const Index = () => {
     }
   }, [profile?.email, isAdmin]);
 
-  // Fetch data when profile loads (use cache with background refresh)
+  // Always fetch fresh stats (same as Grades page) so sheet updates appear on dashboard
   useEffect(() => {
-    if (profile?.roll_number && !isAdmin && !hasFetched) {
-      const cacheKey = `dashboard-stats-${profile.roll_number}`;
-      const cached = sessionStorage.getItem(cacheKey);
-
-      if (cached) {
-        try {
-          // Load from cache immediately (no loading spinner)
-          const { stats: cachedStats, deadlines: cachedDeadlines } = JSON.parse(cached);
-          setStats(cachedStats);
-          setCategoryData([
-            { name: "Labs", score: cachedStats.labs.score, total: cachedStats.labs.total },
-            { name: "Assignments", score: cachedStats.assignments.score, total: cachedStats.assignments.total },
-            { name: "Quizzes", score: cachedStats.quizzes.score, total: cachedStats.quizzes.total },
-            { name: "Exams", score: cachedStats.exams.score, total: cachedStats.exams.total },
-          ]);
-          setUpcomingDeadlines(cachedDeadlines);
-          setHasFetched(true);
-          setLoading(false);
-          
-          // Refresh in background (silently update cache)
-          fetchDashboardData(true);
-        } catch (e) {
-          console.error('Error parsing cache:', e);
-          fetchDashboardData(false);
-        }
-      } else {
-        fetchDashboardData(false);
-      }
+    if (profile?.roll_number && !isAdmin) {
+      fetchDashboardData();
     } else if (profile === null && !isAdmin) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.roll_number, profile?.section, isAdmin, hasFetched]);
+  }, [profile?.roll_number, profile?.section, isAdmin]);
 
-  const fetchDashboardData = async (backgroundRefresh: boolean = false) => {
+  const fetchDashboardData = async () => {
     if (!profile?.roll_number) {
       setLoading(false);
       return;
     }
 
     try {
-      // Only show loader if not a background refresh
-      if (!backgroundRefresh && !stats) {
-        setLoading(true);
-      }
+      setLoading(true);
 
       const [statsData, deadlines] = await Promise.all([
         getStudentStats(profile.roll_number, profile.section as 'CS-F26-M' | 'CS-F26-A' | undefined),
@@ -110,15 +80,13 @@ const Index = () => {
         { name: "Exams", score: statsData.exams.score, total: statsData.exams.total },
       ]);
       setUpcomingDeadlines(deadlines);
-      setHasFetched(true);
 
-      // Update cache with fresh data
+      // Optional soft cache for other consumers; dashboard always revalidates on mount
       const cacheKey = `dashboard-stats-${profile.roll_number}`;
       sessionStorage.setItem(cacheKey, JSON.stringify({ stats: statsData, deadlines }));
 
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
-      // Set empty data on error
       setCategoryData([
         { name: "Labs", score: 0, total: 0 },
         { name: "Assignments", score: 0, total: 0 },
@@ -126,9 +94,7 @@ const Index = () => {
         { name: "Exams", score: 0, total: 0 },
       ]);
     } finally {
-      if (!backgroundRefresh) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 

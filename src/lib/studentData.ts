@@ -318,7 +318,8 @@ export async function getStudentGrades(rollNumber: string, section?: 'CS-F26-M' 
 
 /**
  * Get student dashboard statistics
- * Labs are separate from course (assignments, quizzes, exams, etc.)
+ * Aggregates from visible grade tabs (same data Grades page uses),
+ * not only legacy arrays keyed by tab-name keywords.
  */
 export async function getStudentStats(rollNumber: string, section?: 'CS-F26-M' | 'CS-F26-A'): Promise<{
   overallLabGrade: number; // Lab percentage
@@ -330,41 +331,66 @@ export async function getStudentStats(rollNumber: string, section?: 'CS-F26-M' |
   overall: number; // Legacy - combined (for backward compatibility)
 }> {
   const grades = await getStudentGrades(rollNumber, section);
-  
-  // Filter out bonus/penalty items from counts
-  const labsItems = grades.labs.filter(l => !l.isBonusOrPenalty);
-  const assignmentsItems = grades.assignments.filter(a => !a.isBonusOrPenalty);
-  const quizzesItems = grades.quizzes.filter(q => !q.isBonusOrPenalty);
-  const examsItems = grades.exams.filter(e => !e.isBonusOrPenalty);
-  
-  // Calculate totals - explicitly handle 0 values (0 is a valid score)
-  // Use nullish coalescing to only default to 0 if score/total is null/undefined, not if it's 0
-  const labsTotal = labsItems.reduce((acc, l) => acc + (l.score ?? 0), 0);
-  const labsMax = labsItems.reduce((acc, l) => acc + (l.total ?? 0), 0);
+
+  type StatItem = { score: number; total: number; isBonusOrPenalty?: boolean };
+  const labsItems: StatItem[] = [];
+  const assignmentsItems: StatItem[] = [];
+  const quizzesItems: StatItem[] = [];
+  const examsItems: StatItem[] = [];
+
+  for (const tab of grades.tabs) {
+    if (tab.visible === false) continue;
+
+    const tabNameLower = (tab.name || '').toLowerCase();
+    const items = (tab.items || []).filter((item) => !item.isBonusOrPenalty);
+
+    for (const item of items) {
+      const entry: StatItem = {
+        score: item.score ?? 0,
+        total: item.total ?? 0,
+        isBonusOrPenalty: item.isBonusOrPenalty,
+      };
+
+      if (tabNameLower.includes('lab')) {
+        labsItems.push(entry);
+      } else if (tabNameLower.includes('assignment')) {
+        assignmentsItems.push(entry);
+      } else if (tabNameLower.includes('quiz')) {
+        quizzesItems.push(entry);
+      } else if (tabNameLower.includes('midterm') || tabNameLower.includes('final') || tabNameLower.includes('exam')) {
+        examsItems.push(entry);
+      } else {
+        // Unnamed / custom tabs (Sessional, Marks, etc.) still count toward course grade
+        examsItems.push(entry);
+      }
+    }
+  }
+
+  const sumScore = (items: StatItem[]) => items.reduce((acc, i) => acc + (i.score ?? 0), 0);
+  const sumTotal = (items: StatItem[]) => items.reduce((acc, i) => acc + (i.total ?? 0), 0);
+
+  const labsTotal = sumScore(labsItems);
+  const labsMax = sumTotal(labsItems);
   const labsCount = labsItems.length;
-  
-  // Calculate totals - explicitly handle 0 values (0 is a valid score)
-  const assignmentsTotal = assignmentsItems.reduce((acc, a) => acc + (a.score ?? 0), 0);
-  const assignmentsMax = assignmentsItems.reduce((acc, a) => acc + (a.total ?? 0), 0);
+
+  const assignmentsTotal = sumScore(assignmentsItems);
+  const assignmentsMax = sumTotal(assignmentsItems);
   const assignmentsCount = assignmentsItems.length;
-  
-  const quizzesTotal = quizzesItems.reduce((acc, q) => acc + (q.score ?? 0), 0);
-  const quizzesMax = quizzesItems.reduce((acc, q) => acc + (q.total ?? 0), 0);
+
+  const quizzesTotal = sumScore(quizzesItems);
+  const quizzesMax = sumTotal(quizzesItems);
   const quizzesCount = quizzesItems.length;
-  
-  const examsTotal = examsItems.reduce((acc, e) => acc + (e.score ?? 0), 0);
-  const examsMax = examsItems.reduce((acc, e) => acc + (e.total ?? 0), 0);
+
+  const examsTotal = sumScore(examsItems);
+  const examsMax = sumTotal(examsItems);
   const examsCount = examsItems.length;
 
-  // Lab grade (separate)
   const overallLabGrade = labsMax > 0 ? Math.round((labsTotal / labsMax) * 100) : 0;
-  
-  // Course grade (assignments + quizzes + exams + extra sessionals, etc.)
+
   const courseScore = assignmentsTotal + quizzesTotal + examsTotal;
   const courseMax = assignmentsMax + quizzesMax + examsMax;
   const overallCourseGrade = courseMax > 0 ? Math.round((courseScore / courseMax) * 100) : 0;
 
-  // Legacy overall (combined) - for backward compatibility
   const totalScore = labsTotal + courseScore;
   const totalMax = labsMax + courseMax;
   const overall = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
@@ -376,7 +402,7 @@ export async function getStudentStats(rollNumber: string, section?: 'CS-F26-M' |
     assignments: { score: assignmentsTotal, total: assignmentsMax, count: assignmentsCount },
     quizzes: { score: quizzesTotal, total: quizzesMax, count: quizzesCount },
     exams: { score: examsTotal, total: examsMax, count: examsCount },
-    overall, // Legacy
+    overall,
   };
 }
 
