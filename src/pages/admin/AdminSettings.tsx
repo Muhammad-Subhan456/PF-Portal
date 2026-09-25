@@ -180,24 +180,36 @@ const AdminSettings = () => {
     try {
       setResetting(true);
 
-      // Call Supabase Edge Function or RPC if available, otherwise manual delete
-      // Since we don't have a dedicated RPC for "reset all", we'll delete from tables in order
+      // Delete all rows via filters on real columns (Supabase requires a filter;
+      // grade_data has no `id` — PK is sheet_id + tab_name + roll_number)
 
       // 1. Delete Grade Data
-      const { error: gradeError } = await supabase.from('grade_data').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      const { error: gradeError } = await supabase
+        .from('grade_data')
+        .delete()
+        .neq('roll_number', '');
       if (gradeError) throw gradeError;
 
       // 2. Delete Grade Sheets (Configs)
-      const { error: sheetError } = await supabase.from('grade_sheets').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      const { error: sheetError } = await supabase
+        .from('grade_sheets')
+        .delete()
+        .neq('sheet_id', '');
       if (sheetError) throw sheetError;
 
       // 3. Delete Enrolled Students
-      const { error: enrollError } = await supabase.from('enrolled_students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      const { error: enrollError } = await supabase
+        .from('enrolled_students')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
       if (enrollError) throw enrollError;
 
-      // 4. Delete Students (Profiles)
-      const { error: studentError } = await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      if (studentError) throw studentError;
+      // 4. Clear non-admin user profiles (keep admin accounts)
+      const { error: userError } = await supabase
+        .from('users')
+        .delete()
+        .eq('is_admin', false);
+      if (userError) throw userError;
 
       toast({
         title: "System Reset Complete",
